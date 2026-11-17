@@ -1,0 +1,1 @@
+This directory contains the authoritative project instructions for development agents. `AGENTS.md` is also copied at the repository root for compatibility with Codex and other agents that read root AGENTS.md. Keep the two copies synchronized.
