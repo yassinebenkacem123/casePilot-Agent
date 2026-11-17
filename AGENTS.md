@@ -112,3 +112,11 @@ Use modular, testable boundaries: `frontend/`, `backend/app/{api,models,schemas,
 
 ## Hackathon success demonstration
 Submit a customer issue -> show persistent ticket -> run agent -> show priority/team explanation and draft with citations -> human approves or edits -> drag card to In Progress -> reload board -> demonstrate Salesforce Case sync (or visibly labeled mock) -> show audit timeline and KPIs.
+
+## Agent harness and skill-driven execution (mandatory)
+- Read `.agent/README.md`, `.agent/ARCHITECTURE.md`, `.agent/context/CONTEXT_POLICY.md`, and `.agent/context/STATE.md` at project start. Read `.agent/workflows/ENGINEERING_LOOP.md` before implementation.
+- Load **only relevant** `.agent/skills/<skill>/SKILL.md` for each slice; do not dump all skill documents into context. Use progressive disclosure and verify actual code over stale summaries.
+- Execute the closed loop **Inspect → Plan → Implement → Verify → Critique → Record → Next**. Write tests and report precise commands/outcomes; retry a repeated failure at most twice without changing diagnosis.
+- Treat `.agent/harness/HARNESS.md` as the executable-quality contract: fixtures, validation, idempotency, adversarial inputs, traces, least-privilege tools and explicit gates.
+- On each milestone, refresh `.agent/context/STATE.md` with true implementation state, changed paths, tests run/results, blockers and next action. No fabricated test or integration successes.
+- Prioritize a working vertical slice over autonomous complexity. The **LLM proposes**; backend **policy authorizes**; humans **approve**; audit **records**. No uncontrolled autonomous business actions.
