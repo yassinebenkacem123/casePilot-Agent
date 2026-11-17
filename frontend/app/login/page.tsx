@@ -1,0 +1,62 @@
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+export default function Login() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  return (
+    <main className="login-layout">
+      <Link className="brand" href="/">
+        ◈ CasePilot <span>AI</span>
+      </Link>
+      <form
+        className="form-panel"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setPending(true);
+          const token = new FormData(event.currentTarget).get("token");
+          try {
+            const response = await fetch("/api/session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token }),
+            });
+            if (!response.ok) throw new Error("Invalid operator token");
+            router.replace("/board");
+            router.refresh();
+          } catch (error) {
+            setError((error as Error).message);
+          } finally {
+            setPending(false);
+          }
+        }}
+      >
+        <p className="eyebrow">OPERATOR ACCESS</p>
+        <h1>Welcome back.</h1>
+        <p className="muted">
+          Use the operator token configured by your workspace administrator.
+        </p>
+        <label>
+          Operator token
+          <input
+            type="password"
+            name="token"
+            autoComplete="current-password"
+            required
+          />
+        </label>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        <Button disabled={pending}>
+          {pending ? "Signing in…" : "Open workspace →"}
+        </Button>
+      </form>
+    </main>
+  );
+}
