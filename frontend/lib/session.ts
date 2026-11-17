@@ -38,5 +38,10 @@ export async function clearSession() {
   (await cookies()).delete(COOKIE);
 }
 export function sameOrigin(request: Request) {
-  return request.headers.get("origin") === new URL(request.url).origin;
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  const url = new URL(request.url);
+  if (origin === url.origin) return true;
+  const host = request.headers.get("host");
+  return Boolean(host && origin === `${url.protocol}//${host}`);
 }

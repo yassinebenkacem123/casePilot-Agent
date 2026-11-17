@@ -1,42 +1,72 @@
 import Link from "next/link";
+import { ArrowUpRight, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { IntakeForm } from "@/features/tickets/intake";
+
 export default function Home() {
   return (
     <main className="intake-layout">
-      <nav className="public-nav">
-        <Link href="/" className="brand">
-          ◈ CasePilot <span>AI</span>
+      <nav className="public-nav" aria-label="Primary navigation">
+        <Link href="/" className="brand-link" aria-label="CasePilot AI Home">
+          <BrandLogo variant="dark-surface" size="md" />
         </Link>
-        <Link href="/board">Operator workspace ↗</Link>
+        <Link href="/board" className="nav-pill-link">
+          Operator workspace
+          <ArrowUpRight size={14} />
+        </Link>
       </nav>
+
       <section className="intake-grid">
-        <div>
-          <p className="eyebrow">WE’RE HERE TO HELP</p>
+        <div className="intake-hero">
+          <p className="eyebrow">
+            <Sparkles size={12} /> INTELLIGENT SUPPORT ORCHESTRATION
+          </p>
           <h1>
-            Good support
+            Enterprise support,
             <br />
-            starts here.
+            <span>orchestrated.</span>
           </h1>
           <p className="intro">
-            Tell us what’s happening. Our team will review your request and help
-            you find the next step.
+            Submit your request below. CasePilot AI structures urgency, routes
+            to the right specialists, and prepares a grounded response for human
+            review.
           </p>
+
           <div className="intake-note">
             <span>01</span>
-            <p>Share your request</p>
+            <div>
+              <strong>Persistent intake</strong>
+              <p>Saved immediately with a unique tracking reference</p>
+            </div>
             <span>02</span>
-            <p>Get a tracking reference</p>
+            <div>
+              <strong>AI-assisted triage</strong>
+              <p>Intent, priority, and knowledge sources prepared automatically</p>
+            </div>
             <span>03</span>
-            <p>A person reviews your case</p>
+            <div>
+              <strong>Human-approved resolution</strong>
+              <p>Every recommendation is verified by a support operator</p>
+            </div>
           </div>
-          <p className="muted">
-            Please leave passwords and payment details out of your request.
-          </p>
+
+          <div className="intake-trust">
+            <ShieldCheck size={15} />
+            <span>
+              Please leave passwords, API keys, and payment details out of your
+              request.
+            </span>
+          </div>
         </div>
+
         <IntakeForm />
       </section>
+
       <footer>
-        CasePilot AI <span>Thoughtful support. Human decisions.</span>
+        <span className="footer-brand">
+          <Zap size={12} /> CasePilot AI
+        </span>
+        <span>AI proposes · Humans approve · Audit records</span>
       </footer>
     </main>
   );

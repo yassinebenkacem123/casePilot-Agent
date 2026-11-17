@@ -11,27 +11,38 @@ import {
 import { DragDropProvider, useDroppable } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import {
+  Activity,
+  AlertOctagon,
   ArrowDown,
   ArrowUp,
+  CheckCircle2,
+  Clock,
   GripVertical,
+  Inbox,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   RefreshCw,
   Search,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
+import { ApprovalBadge, PriorityBadge } from "@/components/ui/ai-status";
 import { Button } from "@/components/ui/button";
+import { TicketDrawer } from "@/features/review/drawer";
 import { api } from "@/lib/api";
 import {
   columns,
   type Detail,
+  type Priority,
   type Status,
   type Team,
   type Ticket,
 } from "@/lib/types";
-import { TicketDrawer } from "@/features/review/drawer";
 
 export function Workspace() {
   const [client] = useState(
@@ -43,7 +54,9 @@ export function Workspace() {
     </QueryClientProvider>
   );
 }
+
 type MoveFn = (ticket: Ticket, status: Status, position: number) => void;
+
 function Card({
   ticket,
   index,
@@ -67,6 +80,10 @@ function Card({
     accept: "ticket",
     disabled,
   });
+
+  const teamName =
+    teams.find((t) => t.id === ticket.team_id)?.name || "Unassigned";
+
   return (
     <article
       ref={ref}
@@ -74,45 +91,50 @@ function Card({
       data-testid={`ticket-${ticket.id}`}
     >
       <div className="card-top">
-        <span>{ticket.public_ref}</span>
-        <button
-          ref={handleRef}
-          className="drag-handle"
-          aria-label={`Drag ${ticket.public_ref}`}
-        >
-          <GripVertical size={16} />
-        </button>
+        <span className="ticket-ref">{ticket.public_ref}</span>
+        <div className="card-top-right">
+          {ticket.human_locked_fields.length > 0 && (
+            <span className="lock-chip" title="Human-locked fields">
+              Locked ({ticket.human_locked_fields.length})
+            </span>
+          )}
+          <button
+            ref={handleRef}
+            className="drag-handle"
+            aria-label={`Drag ${ticket.public_ref}`}
+          >
+            <GripVertical size={15} />
+          </button>
+        </div>
       </div>
+
       <button className="card-title" onClick={open}>
         {ticket.subject}
       </button>
       <p className="customer">{ticket.requester_name}</p>
+
       <div className="card-tags">
-        <span className={`badge priority-${ticket.priority.toLowerCase()}`}>
-          {ticket.priority.toLowerCase()}
-        </span>
+        <PriorityBadge priority={ticket.priority} />
         <span className="intent">{ticket.intent || "Awaiting analysis"}</span>
       </div>
+
       <div className="card-meta">
-        <span>
-          {teams.find((t) => t.id === ticket.team_id)?.name || "Unassigned"}
-        </span>
-        <span>
+        <span>{teamName}</span>
+        <span className="confidence-chip">
+          <Sparkles size={10} />
           {ticket.ai_confidence !== null
-            ? `${Math.round(ticket.ai_confidence * 100)}% confidence`
-            : "Not analyzed"}
+            ? `${Math.round(ticket.ai_confidence * 100)}% AI`
+            : "Pending AI"}
         </span>
       </div>
+
       <div className="card-bottom">
-        <span
-          className={`review-state ${ticket.approval_state === "APPROVED" ? "approved" : ""}`}
-        >
-          {ticket.approval_state.toLowerCase()}
-        </span>
+        <ApprovalBadge state={ticket.approval_state} />
         <time dateTime={ticket.updated_at}>
           {new Date(ticket.updated_at).toLocaleDateString()}
         </time>
       </div>
+
       <div className="accessible-move">
         <label className="sr-only" htmlFor={`move-${ticket.id}`}>
           Move {ticket.public_ref}
@@ -148,6 +170,7 @@ function Card({
     </article>
   );
 }
+
 function Column({
   id,
   label,
@@ -165,7 +188,13 @@ function Column({
   disabled: boolean;
   teams: Team[];
 }) {
-  const { ref } = useDroppable({ id, type: "column", accept: "ticket", collisionPriority: 0 });
+  const { ref } = useDroppable({
+    id,
+    type: "column",
+    accept: "ticket",
+    collisionPriority: 0,
+  });
+
   return (
     <section
       className={`kanban-column column-${id.toLowerCase()}`}
@@ -189,24 +218,27 @@ function Column({
           />
         ))}
         {!tickets.length && (
-          <p className="empty-column">
-            All clear here.
-            <br />
+          <div className="empty-column">
+            <p>All clear here.</p>
             <span>Drop a request in this column.</span>
-          </p>
+          </div>
         )}
       </div>
     </section>
   );
 }
+
 function Board() {
   const router = useRouter();
   const client = useQueryClient();
   const [search, setSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<Priority | "ALL">("ALL");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
+
   const tickets = useQuery({
     queryKey: ["tickets"],
     queryFn: () => api<{ items: Ticket[]; total: number }>("tickets?limit=200"),
@@ -214,10 +246,12 @@ function Board() {
     refetchOnWindowFocus: false,
     enabled: !dragging,
   });
+
   const teams = useQuery({
     queryKey: ["teams"],
     queryFn: () => api<Team[]>("teams"),
   });
+
   const metrics = useQuery({
     queryKey: ["metrics"],
     queryFn: () =>
@@ -229,17 +263,36 @@ function Board() {
       }>("dashboard/metrics"),
     refetchInterval: 10000,
   });
+
   const config = useQuery({
     queryKey: ["config"],
     queryFn: () =>
       api<{ salesforce_mode: string; analysis_mode: string }>("config"),
   });
+
   const rows = tickets.data?.items || [];
-  const visible = rows.filter((t) =>
-    `${t.subject} ${t.public_ref} ${t.requester_name} ${t.priority} ${t.team_id}`
+  const criticalCount = rows.filter(
+    (t) => t.priority === "CRITICAL" && t.status !== "RESOLVED",
+  ).length;
+  const analyzedRows = rows.filter((t) => t.ai_confidence !== null);
+  const avgConfidence = analyzedRows.length
+    ? Math.round(
+        (analyzedRows.reduce((acc, t) => acc + (t.ai_confidence ?? 0), 0) /
+          analyzedRows.length) *
+          100,
+      )
+    : null;
+  const latestTicket = rows[0];
+
+  const visible = rows.filter((t) => {
+    const matchesSearch = `${t.subject} ${t.public_ref} ${t.requester_name} ${t.priority} ${t.team_id}`
       .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+      .includes(search.toLowerCase());
+    const matchesPriority =
+      priorityFilter === "ALL" || t.priority === priorityFilter;
+    return matchesSearch && matchesPriority;
+  });
+
   async function move(ticket: Ticket, status: Status, position: number) {
     const needsConfirmation =
       status !== ticket.status &&
@@ -290,34 +343,49 @@ function Board() {
       setBusy(false);
     }
   }
+
   return (
-    <div className="workspace">
+    <div className={`workspace ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <aside className="sidebar">
-        <Link href="/" className="brand">
-          ◈ CasePilot <span>AI</span>
+        <div className="sidebar-header">
+          <Link href="/" className="brand-link" aria-label="CasePilot AI Home">
+            <BrandLogo variant="dark-surface" size="sm" />
+          </Link>
+          <button
+            type="button"
+            className="sidebar-toggle"
+            aria-label={
+              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
+            onClick={() => setSidebarCollapsed((c) => !c)}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen size={16} />
+            ) : (
+              <PanelLeftClose size={16} />
+            )}
+          </button>
+        </div>
+
+        <p className="workspace-label">COMMAND CENTER</p>
+        <Link href="/board" className="nav-item nav-active">
+          <LayoutDashboard size={17} />
+          <span>Overview</span>
         </Link>
-        <p className="workspace-label">SUPPORT WORKSPACE</p>
-        <Link href="/board" className="nav-active">
-          <LayoutDashboard size={18} />
-          Overview
+        <Link href="/" className="nav-item">
+          <Plus size={17} />
+          <span>Customer intake</span>
         </Link>
-        <Link href="/">
-          <Plus size={18} />
-          Customer intake
-        </Link>
+
         <div className="sidebar-bottom">
           <div className="human-note">
-            <ShieldCheck size={20} />
+            <ShieldCheck size={18} />
             <strong>Human at the helm</strong>
-            <p>
-              AI recommends.
-              <br />
-              Your team decides.
-            </p>
+            <p>AI proposes triage & drafts. Your team approves every action.</p>
           </div>
           <div className="operator">
-            <span>OP</span>
-            <div>
+            <span className="operator-avatar">OP</span>
+            <div className="operator-meta">
               <strong>Support operator</strong>
               <small>Demo workspace</small>
             </div>
@@ -329,29 +397,37 @@ function Board() {
                 router.refresh();
               }}
             >
-              <LogOut size={16} />
+              <LogOut size={15} />
             </button>
           </div>
         </div>
       </aside>
+
       <main className="board-main">
         <header className="topbar">
-          <span>
-            Workspace <span className="slash">/</span> Overview
-          </span>
-          <span className="workspace-pill">
-            <span /> Single organization
-          </span>
+          <div className="topbar-breadcrumb">
+            <span>Workspace</span>
+            <span className="slash">/</span>
+            <strong>Overview</strong>
+          </div>
+          <div className="topbar-right">
+            <span className="workspace-pill">
+              <span className="status-dot" />
+              Single organization
+            </span>
+          </div>
         </header>
+
         <div className="board-content">
           <div className="page-heading">
             <div>
-              <p className="eyebrow">YOUR SUPPORT, IN FOCUS</p>
+              <p className="eyebrow">INTELLIGENT SUPPORT ORCHESTRATION</p>
               <h1>
                 Support overview<span>.</span>
               </h1>
               <p className="muted">
-                A clear view of every request. A thoughtful next step for each.
+                Monitor incoming requests, review AI triage proposals, and
+                orchestrate Salesforce Case sync.
               </p>
             </div>
             <Link className="button primary" href="/">
@@ -359,8 +435,9 @@ function Board() {
               New request
             </Link>
           </div>
+
           <div className="demo-banner">
-            <LifeBuoy size={18} />
+            <LifeBuoy size={16} />
             <span>
               {config.data?.salesforce_mode === "live"
                 ? "Salesforce live mode selected · only approved snapshots can sync"
@@ -369,52 +446,113 @@ function Board() {
                 " · Deterministic AI demo"}
             </span>
           </div>
+
           <section className="metrics" aria-label="Dashboard metrics">
-            {[
-              {
-                key: "total",
-                label: "Total requests",
-                note: "Across your workspace",
-              },
-              {
-                key: "review",
-                label: "Awaiting review",
-                note: "Ready for a human decision",
-              },
-              {
-                key: "in_progress",
-                label: "In progress",
-                note: "Your team is on it",
-              },
-              {
-                key: "resolved",
-                label: "Resolved",
-                note: "One less thing to worry about",
-              },
-            ].map((metric, i) => (
-              <article key={metric.key}>
-                <div>
-                  <span>{metric.label}</span>
-                  <span className={`metric-icon metric-${i}`}>
-                    {["↗", "◎", "◷", "✓"][i]}
-                  </span>
-                </div>
-                <strong>
-                  {metrics.data?.[metric.key as keyof typeof metrics.data] ??
-                    "—"}
-                </strong>
-                <p>{metric.note}</p>
-              </article>
-            ))}
+            <article>
+              <div className="metric-header">
+                <span>Total tickets</span>
+                <span className="metric-icon">
+                  <Inbox size={15} />
+                </span>
+              </div>
+              <strong>{metrics.data?.total ?? "—"}</strong>
+              <p>Across your workspace</p>
+            </article>
+
+            <article>
+              <div className="metric-header">
+                <span>Pending review</span>
+                <span className="metric-icon metric-warn">
+                  <Clock size={15} />
+                </span>
+              </div>
+              <strong>{metrics.data?.review ?? "—"}</strong>
+              <p>Awaiting human decision</p>
+            </article>
+
+            <article>
+              <div className="metric-header">
+                <span>Critical tickets</span>
+                <span className="metric-icon metric-danger">
+                  <AlertOctagon size={15} />
+                </span>
+              </div>
+              <strong>{tickets.isPending ? "—" : criticalCount}</strong>
+              <p>Active high-severity cases</p>
+            </article>
+
+            <article>
+              <div className="metric-header">
+                <span>Resolved tickets</span>
+                <span className="metric-icon metric-success">
+                  <CheckCircle2 size={15} />
+                </span>
+              </div>
+              <strong>{metrics.data?.resolved ?? "—"}</strong>
+              <p>Completed &amp; closed</p>
+            </article>
           </section>
+
+          <section
+            className="telemetry-strip"
+            aria-label="AI automation and recent activity"
+          >
+            <div className="telemetry-item">
+              <Sparkles size={14} className="accent-icon" />
+              <span>
+                AI triaged:{" "}
+                <strong>
+                  {analyzedRows.length}/{rows.length}
+                </strong>
+              </span>
+            </div>
+            <div className="telemetry-item">
+              <Activity size={14} />
+              <span>
+                Avg confidence:{" "}
+                <strong>
+                  {avgConfidence !== null ? `${avgConfidence}%` : "—"}
+                </strong>
+              </span>
+            </div>
+            {latestTicket && (
+              <button
+                type="button"
+                className="telemetry-recent"
+                onClick={() => setSelected(latestTicket.id)}
+              >
+                Latest: <strong>{latestTicket.public_ref}</strong> —{" "}
+                {latestTicket.subject}
+              </button>
+            )}
+          </section>
+
           <div className="board-toolbar">
-            <div>
+            <div className="board-toolbar-left">
               <h2>Request board</h2>
-              <span className="muted">{rows.length} requests</span>
+              <span className="count">{visible.length}</span>
+              <div
+                className="priority-filters"
+                role="group"
+                aria-label="Filter by priority"
+              >
+                {(["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map(
+                  (p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      className={`filter-pill ${priorityFilter === p ? "is-active" : ""}`}
+                      onClick={() => setPriorityFilter(p)}
+                    >
+                      {p === "ALL" ? "All" : p.toLowerCase()}
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
             <div className="search-controls">
               <label className="search">
-                <Search size={16} />
+                <Search size={15} />
                 <span className="sr-only">Search requests</span>
                 <input
                   value={search}
@@ -427,15 +565,17 @@ function Board() {
                 aria-label="Refresh board"
                 onClick={() => client.invalidateQueries()}
               >
-                <RefreshCw size={16} />
+                <RefreshCw size={15} />
               </Button>
             </div>
           </div>
+
           <p className="board-hint">
             Drag a handle to move requests. Keyboard: focus a handle, press
             Space, use arrows, then Space to drop. Card controls also move and
             reorder.
           </p>
+
           {(error ||
             tickets.error ||
             metrics.error ||
@@ -447,8 +587,11 @@ function Board() {
                   ?.message}
             </p>
           )}
+
           {tickets.isPending ? (
-            <p role="status">Loading requests…</p>
+            <div className="kanban-skeleton" role="status">
+              Loading requests…
+            </div>
           ) : (
             <DragDropProvider
               onDragStart={() => {
@@ -461,9 +604,12 @@ function Board() {
                 const { source, target } = event.operation;
                 if (!source || !target || !isSortable(source)) return;
                 const ticket = rows.find((t) => t.id === source.id);
-                const columnTarget = columns.find(c => c.id === target.id);
+                const columnTarget = columns.find((c) => c.id === target.id);
                 const group = (columnTarget?.id ?? source.group) as Status;
-                const position = columnTarget ? rows.filter(t => t.status === group && t.id !== source.id).length : source.index;
+                const position = columnTarget
+                  ? rows.filter((t) => t.status === group && t.id !== source.id)
+                      .length
+                  : source.index;
                 if (
                   ticket &&
                   columns.some((c) => c.id === group) &&
@@ -483,25 +629,28 @@ function Board() {
                       .sort((a, b) => a.position - b.position)}
                     open={setSelected}
                     move={move}
-                    disabled={busy || !!search}
+                    disabled={busy || !!search || priorityFilter !== "ALL"}
                     teams={teams.data || []}
                   />
                 ))}
               </div>
             </DragDropProvider>
           )}
+
           {tickets.data && tickets.data.total > rows.length && (
             <p className="muted">
               Showing the first {rows.length} of {tickets.data.total} requests.
               Use the paginated API for larger boards.
             </p>
           )}
+
           <div className="board-footer">
             <ShieldCheck size={14} /> Every AI suggestion requires your review.
             <span>No SLA policy configured</span>
           </div>
         </div>
       </main>
+
       <TicketDrawer
         ticketId={selected}
         close={() => setSelected(null)}

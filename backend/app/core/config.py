@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     frontend_origin: str = "http://localhost:3000"
     llm_model: str = ""
     openai_api_key: str = ""
+    gemini_api_key: str = ""
+    deepseek_api_key: str = ""
     salesforce_mode: Literal["demo", "live"] = "demo"
     salesforce_instance_url: str = ""
     salesforce_client_id: str = ""

@@ -1,11 +1,18 @@
 # Working state (agent-maintained)
 
 ## Current milestone — 2026-11-17
-Intake/persistence/Kanban implemented. Review, LangGraph, RAG, Salesforce and worker slice under verification.
+Intake/persistence/Kanban implemented. CasePilot AI dark-first brand identity, design skill (`casepilot-design-system`), typography (`Sora` + `Inter`), official logo assets, and UI/UX refinement implemented across intake, login, dashboard, Kanban board, and ticket review drawer.
 
 ## Completed
 - `backend/`: FastAPI/SQLAlchemy entities, Alembic schema, protected tickets/details/edits/moves/metrics; idempotent intake and durable analysis jobs.
 - `frontend/`: Next.js intake, signed HttpOnly operator sessions/server proxy, TanStack Query board, current `@dnd-kit/react`, review drawer and explicit Salesforce demo banner.
+- `frontend/` Brand Identity & UI/UX:
+  - Sampled exact logo accent (`#FF3419`) and centralized dark-first tokens (`#000000`, `#0D0D0F`, `#151518`, `#1F1F23`, `#F5F5F7`, `#A1A1AA`, `#2A2A2E`) in `frontend/app/globals.css`.
+  - Integrated `Sora` + `Inter` via `next/font/google` in `frontend/app/layout.tsx`.
+  - Copied original logo PNGs to `frontend/public/assets/casepilot-logo-dark.png` and `casepilot-logo-light.png`; added reusable `<BrandLogo />` in `frontend/components/brand-logo.tsx`.
+  - Added `<AnalysisBadge />`, `<ApprovalBadge />`, `<PriorityBadge />`, and `<AgentStepList />` in `frontend/components/ui/ai-status.tsx`.
+  - Redesigned intake (`app/page.tsx`, `features/tickets/intake.tsx`), login (`app/login/page.tsx`), command-center dashboard & Kanban (`features/board/workspace.tsx`), and ticket review drawer (`features/review/drawer.tsx`).
+- `.agents/skills/casepilot-design-system/SKILL.md` created and referenced in `AGENTS.md`.
 - Root `.gitignore`, `.env.example`, `compose.yaml`; preserved the user's `.agent/` -> `.agents/` move.
 - Python 3.12.13 and dependencies installed in ignored project environments. Lockfiles generated.
 
@@ -20,14 +27,12 @@ Intake/persistence/Kanban implemented. Review, LangGraph, RAG, Salesforce and wo
 - Priority and Kanban status/order are separate fields.
 
 ## Last verification
-- Backend `.venv/Scripts/python -m pytest tests/test_intake_board.py -q`: **4 passed**, exit 0.
-- Frontend `npm run typecheck`, `npm test` (**1 passed**), `npm run build`: exit 0.
-- Frontend `npm run lint`: exit 0, four warnings queued for cleanup.
-- Backend ruff initially reported 3 import issues; `ruff check --fix` corrected all; `ruff format` executed. Clean rerun pending.
-- Docker engine unavailable (named pipe missing). PostgreSQL not yet runtime verified; API tests currently SQLite.
-- `.venv/Scripts/python -m pytest tests/test_agent_review_rag.py -q`: **9 passed**, exit 0.
-- `.venv/Scripts/python -m pytest -q`: **22 passed** (intake/board, proposal approvals/locks/rejection, three golden scenarios, RAG citation forgery/abstention, malicious request scope, retries/recovery, Salesforce mock HTTP/OAuth/upsert/outbox). Full command completion recorded by terminal output; final clean rerun pending additional tests.
-- No live LLM or Salesforce request performed. Demo adapter produces `DEMO_NOT_SYNCED` with no fabricated Case ID.
+- Frontend `npm run typecheck`: **exit 0** (0 errors).
+- Frontend `npm run lint`: **exit 0** (0 errors, 0 warnings).
+- Frontend `npm test` (`vitest run`): **1 passed** (`tests/intake.test.tsx`), exit 0.
+- Frontend `npm run build` (`next build`): **exit 0** (compiled `/` , `/board`, `/login`, `/api/*`).
+- Note: Playwright E2E (`playwright.config.ts`) targets Windows `.venv\Scripts\python.exe` and was not executed on macOS.
+- Backend `.venv/Scripts/python -m pytest -q`: **22 passed** (prior milestone; backend untouched in this UI/brand pass).
 
 ## Blockers / uncertainties
 - Salesforce sandbox credentials/entitlements and actual picklist mappings unknown.

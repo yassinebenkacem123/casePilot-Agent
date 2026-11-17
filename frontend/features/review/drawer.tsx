@@ -2,14 +2,29 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  BookOpen,
+  CloudUpload,
+  Lock,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import {
+  AgentStepList,
+  AnalysisBadge,
+  ApprovalBadge,
+  PriorityBadge,
+} from "@/components/ui/ai-status";
+import { Button } from "@/components/ui/button";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { Detail, Priority, Team } from "@/lib/types";
+
 export function TicketDrawer({
   ticketId,
   close,
@@ -22,13 +37,16 @@ export function TicketDrawer({
   const client = useQueryClient();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
   const detail = useQuery({
     queryKey: ["ticket", ticketId],
     queryFn: () => api<Detail>(`tickets/${ticketId}`),
     enabled: !!ticketId,
     refetchInterval: 5000,
   });
+
   const t = detail.data;
+
   async function action(
     path: string,
     body: Record<string, unknown> = {},
@@ -52,7 +70,10 @@ export function TicketDrawer({
       setBusy(false);
     }
   }
+
   const proposal = t?.proposals.find((p) => p.state === "PENDING");
+  const hasSources = Boolean(t?.drafts.some((d) => d.sources.length > 0));
+
   return (
     <Dialog
       open={!!ticketId}
@@ -64,11 +85,22 @@ export function TicketDrawer({
       }}
     >
       <DialogContent>
-        <DialogTitle>{t?.subject || "Loading ticket…"}</DialogTitle>
-        <DialogDescription>
-          {t?.public_ref || "Ticket detail"} · Review recommendations before
-          applying them.
-        </DialogDescription>
+        <div className="drawer-header">
+          {t && (
+            <div className="drawer-badges">
+              <span className="ticket-ref">{t.public_ref}</span>
+              <PriorityBadge priority={t.priority} />
+              <AnalysisBadge state={t.analysis_state} />
+              <ApprovalBadge state={t.approval_state} />
+            </div>
+          )}
+          <DialogTitle>{t?.subject || "Loading ticket…"}</DialogTitle>
+          <DialogDescription>
+            {t?.public_ref || "Ticket detail"} · Review AI recommendations
+            before applying them.
+          </DialogDescription>
+        </div>
+
         {detail.error && (
           <p className="error" role="alert">
             {detail.error.message}
@@ -79,19 +111,103 @@ export function TicketDrawer({
             {error}
           </p>
         )}
+
         {t && (
           <>
             <section>
               <p className="eyebrow">ORIGINAL REQUEST</p>
-              <strong>{t.requester_name}</strong>
-              <p className="muted">{t.requester_email}</p>
+              <div className="requester-row">
+                <strong>{t.requester_name}</strong>
+                <span className="muted">{t.requester_email}</span>
+              </div>
               <p className="request-body">{t.description}</p>
             </section>
+
             <section>
-              <h3>Operator decision</h3>
+              <div className="section-heading">
+                <h3>
+                  <Sparkles size={15} className="accent-icon" /> AI recommendation
+                </h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => action(`tickets/${t.id}/analyze`)}
+                >
+                  <RefreshCw size={13} />
+                  Analyze again
+                </Button>
+              </div>
               <p className="small muted">
-                Edits lock the changed field against AI updates and require a
-                fresh sync approval.
+                Analysis: {t.analysis_state} · Decision: {t.approval_state}
+              </p>
+
+              <AgentStepList
+                analysisState={t.analysis_state}
+                hasIntent={Boolean(t.intent || proposal?.intent)}
+                hasProposal={Boolean(proposal || t.proposals.length)}
+                hasSources={hasSources}
+                approvalState={t.approval_state}
+              />
+
+              {proposal ? (
+                <div className="proposal">
+                  <div className="proposal-header">
+                    <span className="proposal-tag">
+                      Proposed · Awaiting Human Approval
+                    </span>
+                    <span className="confidence-chip">
+                      {Math.round(proposal.confidence * 100)}% confidence
+                    </span>
+                  </div>
+                  <div className="card-tags">
+                    <span className="badge">
+                      {proposal.proposed_priority || "Priority locked"}
+                    </span>
+                    <span className="intent">
+                      {teams.find(
+                        (team) => team.id === proposal.proposed_team_id,
+                      )?.name || "Team locked"}
+                    </span>
+                    <span className="intent">Intent: {proposal.intent}</span>
+                  </div>
+                  <p>{proposal.rationale}</p>
+                  <p className="small muted">
+                    Locked fields are preserved. Approval applies the
+                    recommendation atomically.
+                  </p>
+                  <div className="actions">
+                    <Button
+                      disabled={busy}
+                      onClick={() => action(`proposals/${proposal.id}/approve`)}
+                    >
+                      Approve recommendation
+                    </Button>
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => action(`proposals/${proposal.id}/reject`)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted">
+                  No pending proposal. Analyze this request to generate one.
+                </p>
+              )}
+            </section>
+
+            <section>
+              <div className="section-heading">
+                <h3>
+                  <ShieldCheck size={15} /> Operator decision
+                </h3>
+              </div>
+              <p className="small muted">
+                Manual edits lock the changed field against AI overwrites and
+                require a fresh sync approval.
               </p>
               <div className="form-row">
                 <label>
@@ -138,7 +254,7 @@ export function TicketDrawer({
               </div>
               <div className="locks">
                 {["priority", "team_id", "status", "intent"].map((field) => (
-                  <label key={field}>
+                  <label key={field} className="lock-checkbox">
                     <input
                       type="checkbox"
                       checked={t.human_locked_fields.includes(field)}
@@ -157,72 +273,21 @@ export function TicketDrawer({
                         )
                       }
                     />
+                    <Lock size={11} />
                     Lock {field.replace("_id", "")}
                   </label>
                 ))}
               </div>
             </section>
+
             <section>
               <div className="section-heading">
-                <h3>AI recommendation</h3>
+                <h3>
+                  <BookOpen size={15} /> Response draft
+                </h3>
                 <Button
                   variant="outline"
-                  disabled={busy}
-                  onClick={() => action(`tickets/${t.id}/analyze`)}
-                >
-                  Analyze again
-                </Button>
-              </div>
-              <p className="small muted">
-                Analysis: {t.analysis_state} · Decision: {t.approval_state}
-              </p>
-              {proposal ? (
-                <div className="proposal">
-                  <div className="card-tags">
-                    <span className="badge">
-                      {proposal.proposed_priority || "Priority locked"}
-                    </span>
-                    <span>
-                      {teams.find(
-                        (team) => team.id === proposal.proposed_team_id,
-                      )?.name || "Team locked"}
-                    </span>
-                    <span>
-                      {Math.round(proposal.confidence * 100)}% confidence
-                    </span>
-                  </div>
-                  <p>{proposal.rationale}</p>
-                  <p className="small muted">
-                    Intent: {proposal.intent} · Locked fields are preserved.
-                    Approval applies the recommendation atomically.
-                  </p>
-                  <div className="actions">
-                    <Button
-                      disabled={busy}
-                      onClick={() => action(`proposals/${proposal.id}/approve`)}
-                    >
-                      Approve recommendation
-                    </Button>
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => action(`proposals/${proposal.id}/reject`)}
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="muted">
-                  No pending proposal. Analyze this request to generate one.
-                </p>
-              )}
-            </section>
-            <section>
-              <div className="section-heading">
-                <h3>Response draft</h3>
-                <Button
-                  variant="outline"
+                  size="sm"
                   disabled={busy}
                   onClick={() => action(`tickets/${t.id}/reply-drafts`)}
                 >
@@ -237,6 +302,7 @@ export function TicketDrawer({
                     {d.state === "DRAFT" && (
                       <Button
                         variant="outline"
+                        size="sm"
                         disabled={busy}
                         onClick={() => action(`reply-drafts/${d.id}/approve`)}
                       >
@@ -267,12 +333,17 @@ export function TicketDrawer({
                 connected.
               </p>
             </section>
+
             <section>
-              <h3>Salesforce</h3>
-              <p>
-                Status: <strong>{t.sync_status}</strong>
-              </p>
-              {t.salesforce_case_id && <p>Case ID: {t.salesforce_case_id}</p>}
+              <div className="section-heading">
+                <h3>
+                  <CloudUpload size={15} /> Salesforce
+                </h3>
+                <span className="badge">{t.sync_status}</span>
+              </div>
+              {t.salesforce_case_id && (
+                <p className="small muted">Case ID: {t.salesforce_case_id}</p>
+              )}
               <Button
                 disabled={busy}
                 variant="outline"
@@ -285,9 +356,10 @@ export function TicketDrawer({
                     void action(`tickets/${t.id}/salesforce-sync`);
                 }}
               >
-                Approve this version & request sync
+                Approve this version &amp; request sync
               </Button>
             </section>
+
             <section>
               <h3>Audit timeline</h3>
               <ol className="timeline">

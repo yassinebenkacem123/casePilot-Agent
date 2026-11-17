@@ -1,13 +1,15 @@
 "use client";
 import { useRef, useState } from "react";
-import { CheckCircle2, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+
 export function IntakeForm() {
   const key = useRef<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [tracking, setTracking] = useState("");
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
@@ -27,16 +29,20 @@ export function IntakeForm() {
       setPending(false);
     }
   }
+
   if (tracking)
     return (
       <section className="form-panel success" role="status">
-        <CheckCircle2 size={40} />
+        <div className="success-icon-wrap">
+          <CheckCircle2 size={28} />
+        </div>
+        <p className="eyebrow">REQUEST PERSISTED</p>
         <h2>Your request is saved.</h2>
-        <p>Keep your tracking reference:</p>
+        <p className="muted">Keep your tracking reference for follow-up:</p>
         <strong className="tracking">{tracking}</strong>
-        <p>
-          Our support team will review your request. No response has been sent
-          automatically.
+        <p className="muted">
+          Our support team will review your request. No automated response has
+          been sent to you yet.
         </p>
         <Button
           variant="outline"
@@ -49,9 +55,10 @@ export function IntakeForm() {
         </Button>
       </section>
     );
+
   return (
     <form className="form-panel" onSubmit={submit}>
-      <p className="eyebrow">NEW REQUEST</p>
+      <p className="eyebrow">NEW SUPPORT REQUEST</p>
       <h2>How can we help?</h2>
       <div className="form-row">
         <label>
@@ -111,11 +118,14 @@ export function IntakeForm() {
       )}
       <Button disabled={pending} type="submit">
         {pending ? "Saving request…" : "Send request"}
-        <ArrowUpRight size={17} />
+        <ArrowUpRight size={16} />
       </Button>
-      <p className="muted small">
-        Your request is saved before AI analysis. Every recommendation is
-        reviewed by a person.
+      <p className="muted small form-footnote">
+        <ShieldCheck size={13} />
+        <span>
+          Your request is saved before AI analysis. Every recommendation is
+          reviewed by a person.
+        </span>
       </p>
     </form>
   );
