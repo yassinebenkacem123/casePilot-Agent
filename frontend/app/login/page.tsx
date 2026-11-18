@@ -15,7 +15,7 @@ export default function Login() {
     <main className="login-layout">
       <div className="login-brand">
         <Link className="brand-link" href="/" aria-label="CasePilot AI Home">
-          <BrandLogo variant="dark-surface" size="lg" />
+          <BrandLogo variant="light-surface" size="lg" />
         </Link>
       </div>
       <form

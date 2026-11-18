@@ -63,6 +63,7 @@ class TicketSummary(BaseModel):
     subject: str
     status: Status
     priority: Priority
+    proposed_priority: Priority | None = None
     priority_rank: int
     position: int
     intent: str | None

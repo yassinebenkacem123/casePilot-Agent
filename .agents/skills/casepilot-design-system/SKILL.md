@@ -20,22 +20,22 @@ description: CasePilot AI brand identity, dark-first design tokens, typography, 
 
 ## 2. Color Tokens & Usage Rules
 
-CasePilot AI uses a **dark-first** visual identity. All colors are centralized as CSS custom properties in `frontend/app/globals.css` — never hardcode hex values in components.
+CasePilot AI uses a **light-first** visual identity (`#FFFFFF` + `#FF3419` brand orange-red). All colors are centralized as CSS custom properties in `frontend/app/globals.css` — never hardcode hex values in components.
 
 | Semantic Token | CSS Variable | Value | Usage |
 |---|---|---|---|
-| Main background | `--background` | `#000000` | App canvas, page backdrop |
-| Secondary background | `--bg-secondary` | `#0D0D0F` | Sidebar, topbar, recessed regions |
-| Card background | `--card` | `#151518` | Metric cards, ticket cards, form panels, Kanban columns |
-| Elevated surface | `--elevated` | `#1F1F23` | Drawers, popovers, hover states, active inputs |
-| Primary text | `--foreground` | `#F5F5F7` | Headings, primary labels, ticket titles |
-| Secondary text | `--muted-foreground` | `#A1A1AA` | Metadata, descriptions, timestamps, hints |
-| Primary accent | `--primary` | `#FF3419` | Sampled from official logo AI badge; primary CTAs, active nav, selected states, key AI indicators |
+| Main background | `--background` | `#FFFFFF` | Landing canvas, cards, inputs |
+| Secondary background | `--bg-secondary` | `#F8F9FB` | Workspace backdrop, hero surface, subtle regions |
+| Card background | `--card` | `#FFFFFF` | Metric cards, ticket cards, form panels |
+| Elevated surface | `--elevated` | `#F1F3F6` | Kanban column wells, hover states |
+| Primary text | `--foreground` | `#151414` | Headings, primary labels, ticket titles |
+| Secondary text | `--muted-foreground` | `#52525B` | Metadata, descriptions, timestamps, hints |
+| Primary accent | `--primary` | `#FF3419` | Sampled from official logo AI badge; primary CTAs, active nav, floating agent FAB, key AI indicators |
 | Accent hover | `--primary-hover` | `#E52B1A` | Hover/active state for primary buttons |
-| Subtle border | `--border` | `#2A2A2E` | 1px hairlines, dividers, card/input outlines |
-| Success | `--success` | `#22C55E` | Approved states, resolved status, live sync |
-| Warning | `--warning` | `#F59E0B` | Pending review, demo mode notices, medium-high alerts |
-| Danger | `--danger` | `#EF4444` | Errors, critical severity, destructive actions |
+| Subtle border | `--border` | `#E4E4E7` | 1px hairlines, dividers, card/input outlines |
+| Success | `--success` | `#16A34A` | Approved states, low priority, live sync |
+| Warning | `--warning` | `#D97706` | Medium priority, demo mode notices |
+| Danger | `--danger` | `#DC2626` | Errors, critical severity, destructive actions |
 
 **Strict Usage Rules:**
 - Black (`#000000`) and dark charcoal (`#0D0D0F`, `#151518`) dominate ≥ 85% of the viewport.
@@ -59,8 +59,8 @@ Avoid decorative weights above `700` or ultra-light weights below `400`.
 
 Use the original logo PNGs as the single source of truth. **Never** recreate, stretch, skew, recolor, or replace them with SVG approximations or AI-generated variants.
 
-- **Dark surfaces (default):** `/assets/casepilot-logo-dark.png` (white wordmark + `#FF3419` AI badge, transparent background).
-- **Light surfaces:** `/assets/casepilot-logo-light.png` (`#151414` wordmark + `#FF3419` AI badge).
+- **Light surfaces (default):** `/assets/casepilot-logo-light.png` (`#151414` wordmark + `#FF3419` AI badge).
+- **Dark surfaces:** `/assets/casepilot-logo-dark.png` (white wordmark + `#FF3419` AI badge, transparent background).
 - Always render via the reusable `<BrandLogo />` component with `object-contain` and explicit aspect-preserving dimensions. Maintain clear space around the mark.
 
 ---

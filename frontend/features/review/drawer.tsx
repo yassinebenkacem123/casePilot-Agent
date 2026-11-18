@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
+  Check,
   CloudUpload,
   Lock,
   RefreshCw,
@@ -89,15 +90,15 @@ export function TicketDrawer({
           {t && (
             <div className="drawer-badges">
               <span className="ticket-ref">{t.public_ref}</span>
-              <PriorityBadge priority={t.priority} />
+              <PriorityBadge priority={proposal?.proposed_priority ?? t.priority} />
               <AnalysisBadge state={t.analysis_state} />
               <ApprovalBadge state={t.approval_state} />
             </div>
           )}
           <DialogTitle>{t?.subject || "Loading ticket…"}</DialogTitle>
           <DialogDescription>
-            {t?.public_ref || "Ticket detail"} · Review AI recommendations
-            before applying them.
+            {t?.public_ref || "Ticket detail"} · Confirm the AI triage or change
+            priority and team below.
           </DialogDescription>
         </div>
 
@@ -114,6 +115,44 @@ export function TicketDrawer({
 
         {t && (
           <>
+            {/* Quick Confirm or Change bar */}
+            <section className="confirm-change-bar">
+              <div className="confirm-change-top">
+                <div>
+                  <p className="eyebrow">CONFIRM OR CHANGE</p>
+                  <p className="small muted">
+                    {proposal
+                      ? `Agent suggests ${proposal.proposed_priority ?? t.priority} priority. Confirm to apply or choose another priority.`
+                      : `Current priority: ${t.priority}. Change below anytime.`}
+                  </p>
+                </div>
+                {proposal && (
+                  <Button
+                    disabled={busy}
+                    onClick={() => action(`proposals/${proposal.id}/approve`)}
+                  >
+                    <Check size={15} />
+                    Confirm recommendation
+                  </Button>
+                )}
+              </div>
+              <div className="quick-priority-row" role="group" aria-label="Change priority">
+                {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    disabled={busy}
+                    className={`quick-priority-btn ${t.priority === p ? "is-selected" : ""}`}
+                    onClick={() =>
+                      action(`tickets/${t.id}`, { priority: p }, "PATCH")
+                    }
+                  >
+                    {p.toLowerCase()}
+                  </button>
+                ))}
+              </div>
+            </section>
+
             <section>
               <p className="eyebrow">ORIGINAL REQUEST</p>
               <div className="requester-row">
@@ -154,7 +193,7 @@ export function TicketDrawer({
                 <div className="proposal">
                   <div className="proposal-header">
                     <span className="proposal-tag">
-                      Proposed · Awaiting Human Approval
+                      Proposed · Awaiting Confirmation
                     </span>
                     <span className="confidence-chip">
                       {Math.round(proposal.confidence * 100)}% confidence
@@ -172,10 +211,6 @@ export function TicketDrawer({
                     <span className="intent">Intent: {proposal.intent}</span>
                   </div>
                   <p>{proposal.rationale}</p>
-                  <p className="small muted">
-                    Locked fields are preserved. Approval applies the
-                    recommendation atomically.
-                  </p>
                   <div className="actions">
                     <Button
                       disabled={busy}
@@ -202,7 +237,7 @@ export function TicketDrawer({
             <section>
               <div className="section-heading">
                 <h3>
-                  <ShieldCheck size={15} /> Operator decision
+                  <ShieldCheck size={15} /> Change &amp; lock fields
                 </h3>
               </div>
               <p className="small muted">

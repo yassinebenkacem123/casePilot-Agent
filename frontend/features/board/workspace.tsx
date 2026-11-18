@@ -13,8 +13,6 @@ import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import {
   Activity,
   AlertOctagon,
-  ArrowDown,
-  ArrowUp,
   CheckCircle2,
   Clock,
   GripVertical,
@@ -31,15 +29,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
+import { SupportAgentPopup } from "@/components/support-agent-popup";
 import { ApprovalBadge, PriorityBadge } from "@/components/ui/ai-status";
 import { Button } from "@/components/ui/button";
 import { TicketDrawer } from "@/features/review/drawer";
 import { api } from "@/lib/api";
 import {
-  columns,
+  priorityColumns,
   type Detail,
   type Priority,
-  type Status,
+  type PriorityColumnId,
   type Team,
   type Ticket,
 } from "@/lib/types";
@@ -55,27 +54,36 @@ export function Workspace() {
   );
 }
 
-type MoveFn = (ticket: Ticket, status: Status, position: number) => void;
+function getEffectiveColumn(ticket: Ticket): PriorityColumnId {
+  const effective = ticket.proposed_priority ?? ticket.priority;
+  if (effective === "LOW") return "LOW";
+  if (effective === "HIGH" || effective === "CRITICAL") return "HIGH";
+  return "MEDIUM";
+}
+
+type ChangePriorityFn = (ticket: Ticket, priority: Priority) => void;
 
 function Card({
   ticket,
   index,
+  columnId,
   open,
-  move,
+  changePriority,
   disabled,
   teams,
 }: {
   ticket: Ticket;
   index: number;
+  columnId: PriorityColumnId;
   open: () => void;
-  move: MoveFn;
+  changePriority: ChangePriorityFn;
   disabled: boolean;
   teams: Team[];
 }) {
   const { ref, handleRef, isDragging } = useSortable({
     id: ticket.id,
     index,
-    group: ticket.status,
+    group: columnId,
     type: "ticket",
     accept: "ticket",
     disabled,
@@ -83,6 +91,10 @@ function Card({
 
   const teamName =
     teams.find((t) => t.id === ticket.team_id)?.name || "Unassigned";
+  const effectivePriority = ticket.proposed_priority ?? ticket.priority;
+  const isAiSuggested = Boolean(
+    ticket.proposed_priority && ticket.approval_state !== "APPROVED",
+  );
 
   return (
     <article
@@ -93,6 +105,12 @@ function Card({
       <div className="card-top">
         <span className="ticket-ref">{ticket.public_ref}</span>
         <div className="card-top-right">
+          {isAiSuggested && (
+            <span className="ai-auto-chip" title="Auto-triaged by CasePilot AI">
+              <Sparkles size={10} />
+              AI Auto
+            </span>
+          )}
           {ticket.human_locked_fields.length > 0 && (
             <span className="lock-chip" title="Human-locked fields">
               Locked ({ticket.human_locked_fields.length})
@@ -114,7 +132,7 @@ function Card({
       <p className="customer">{ticket.requester_name}</p>
 
       <div className="card-tags">
-        <PriorityBadge priority={ticket.priority} />
+        <PriorityBadge priority={effectivePriority} />
         <span className="intent">{ticket.intent || "Awaiting analysis"}</span>
       </div>
 
@@ -137,34 +155,29 @@ function Card({
 
       <div className="accessible-move">
         <label className="sr-only" htmlFor={`move-${ticket.id}`}>
-          Move {ticket.public_ref}
+          Priority for {ticket.public_ref}
         </label>
         <select
           id={`move-${ticket.id}`}
           aria-label={`Move ${ticket.public_ref}`}
-          value={ticket.status}
+          value={columnId}
           disabled={disabled}
-          onChange={(e) => move(ticket, e.target.value as Status, 0)}
+          onChange={(e) =>
+            changePriority(ticket, e.target.value as Priority)
+          }
         >
-          {columns.map((c) => (
+          {priorityColumns.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
             </option>
           ))}
         </select>
         <button
-          aria-label={`Move ${ticket.public_ref} up`}
-          disabled={disabled || index === 0}
-          onClick={() => move(ticket, ticket.status, index - 1)}
+          type="button"
+          className="card-review-btn"
+          onClick={open}
         >
-          <ArrowUp size={13} />
-        </button>
-        <button
-          aria-label={`Move ${ticket.public_ref} down`}
-          disabled={disabled}
-          onClick={() => move(ticket, ticket.status, index + 1)}
-        >
-          <ArrowDown size={13} />
+          Confirm / Change
         </button>
       </div>
     </article>
@@ -176,15 +189,15 @@ function Column({
   label,
   tickets,
   open,
-  move,
+  changePriority,
   disabled,
   teams,
 }: {
-  id: Status;
+  id: PriorityColumnId;
   label: string;
   tickets: Ticket[];
   open: (id: string) => void;
-  move: MoveFn;
+  changePriority: ChangePriorityFn;
   disabled: boolean;
   teams: Team[];
 }) {
@@ -197,7 +210,7 @@ function Column({
 
   return (
     <section
-      className={`kanban-column column-${id.toLowerCase()}`}
+      className={`kanban-column column-priority-${id.toLowerCase()}`}
       aria-label={label}
     >
       <header>
@@ -211,16 +224,17 @@ function Column({
             key={ticket.id}
             ticket={ticket}
             index={index}
+            columnId={id}
             open={() => open(ticket.id)}
-            move={move}
+            changePriority={changePriority}
             disabled={disabled}
             teams={teams}
           />
         ))}
         {!tickets.length && (
           <div className="empty-column">
-            <p>All clear here.</p>
-            <span>Drop a request in this column.</span>
+            <p>No {label.toLowerCase()} priority tickets.</p>
+            <span>Agent-triaged requests appear here automatically.</span>
           </div>
         )}
       </div>
@@ -232,8 +246,8 @@ function Board() {
   const router = useRouter();
   const client = useQueryClient();
   const [search, setSearch] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<Priority | "ALL">("ALL");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -242,7 +256,7 @@ function Board() {
   const tickets = useQuery({
     queryKey: ["tickets"],
     queryFn: () => api<{ items: Ticket[]; total: number }>("tickets?limit=200"),
-    refetchInterval: dragging || busy ? false : 10000,
+    refetchInterval: dragging || busy ? false : 5000,
     refetchOnWindowFocus: false,
     enabled: !dragging,
   });
@@ -261,7 +275,7 @@ function Board() {
         in_progress: number;
         resolved: number;
       }>("dashboard/metrics"),
-    refetchInterval: 10000,
+    refetchInterval: 5000,
   });
 
   const config = useQuery({
@@ -271,9 +285,7 @@ function Board() {
   });
 
   const rows = tickets.data?.items || [];
-  const criticalCount = rows.filter(
-    (t) => t.priority === "CRITICAL" && t.status !== "RESOLVED",
-  ).length;
+  const highCount = rows.filter((t) => getEffectiveColumn(t) === "HIGH").length;
   const analyzedRows = rows.filter((t) => t.ai_confidence !== null);
   const avgConfidence = analyzedRows.length
     ? Math.round(
@@ -284,60 +296,38 @@ function Board() {
     : null;
   const latestTicket = rows[0];
 
-  const visible = rows.filter((t) => {
-    const matchesSearch = `${t.subject} ${t.public_ref} ${t.requester_name} ${t.priority} ${t.team_id}`
+  const visible = rows.filter((t) =>
+    `${t.subject} ${t.public_ref} ${t.requester_name} ${t.priority} ${t.proposed_priority ?? ""} ${t.team_id ?? ""}`
       .toLowerCase()
-      .includes(search.toLowerCase());
-    const matchesPriority =
-      priorityFilter === "ALL" || t.priority === priorityFilter;
-    return matchesSearch && matchesPriority;
-  });
+      .includes(search.toLowerCase()),
+  );
 
-  async function move(ticket: Ticket, status: Status, position: number) {
-    const needsConfirmation =
-      status !== ticket.status &&
-      (status === "RESOLVED" || ticket.status === "RESOLVED");
-    if (
-      needsConfirmation &&
-      !window.confirm(
-        status === "RESOLVED" ? "Resolve this ticket?" : "Reopen this ticket?",
-      )
-    )
-      return;
+  async function changePriority(ticket: Ticket, priority: Priority) {
+    if (ticket.priority === priority && !ticket.proposed_priority) return;
     setBusy(true);
     setError("");
     await client.cancelQueries({ queryKey: ["tickets"] });
     const previous = client.getQueryData<{ items: Ticket[]; total: number }>([
       "tickets",
     ]);
-    const destination = rows
-      .filter((t) => t.status === status && t.id !== ticket.id)
-      .sort((a, b) => a.position - b.position);
-    destination.splice(Math.min(position, destination.length), 0, {
-      ...ticket,
-      status,
-    });
-    const optimistic = rows
-      .map((t) => destination.find((d) => d.id === t.id) || t)
-      .map((t) =>
-        t.status === status
-          ? { ...t, position: destination.findIndex((d) => d.id === t.id) }
-          : t,
-      );
+    const optimistic = rows.map((t) =>
+      t.id === ticket.id
+        ? { ...t, priority, proposed_priority: null }
+        : t,
+    );
     client.setQueryData(["tickets"], { ...previous, items: optimistic });
     try {
-      await api<Detail>(`tickets/${ticket.id}/position`, {
+      await api<Detail>(`tickets/${ticket.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           expected_version: ticket.version,
-          status,
-          position,
-          confirmed: needsConfirmation,
+          priority,
+          reason: `Operator moved ticket to ${priority} priority column`,
         }),
       });
-    } catch (error) {
+    } catch (err) {
       client.setQueryData(["tickets"], previous);
-      setError((error as Error).message);
+      setError((err as Error).message);
     } finally {
       await client.invalidateQueries();
       setBusy(false);
@@ -349,7 +339,7 @@ function Board() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <Link href="/" className="brand-link" aria-label="CasePilot AI Home">
-            <BrandLogo variant="dark-surface" size="sm" />
+            <BrandLogo variant="light-surface" size="sm" />
           </Link>
           <button
             type="button"
@@ -372,22 +362,26 @@ function Board() {
           <LayoutDashboard size={17} />
           <span>Overview</span>
         </Link>
-        <Link href="/" className="nav-item">
-          <Plus size={17} />
-          <span>Customer intake</span>
-        </Link>
+        <button
+          type="button"
+          className="nav-item nav-item-button"
+          onClick={() => setAgentOpen(true)}
+        >
+          <Sparkles size={17} />
+          <span>Support Agent</span>
+        </button>
 
         <div className="sidebar-bottom">
           <div className="human-note">
             <ShieldCheck size={18} />
             <strong>Human at the helm</strong>
-            <p>AI proposes triage & drafts. Your team approves every action.</p>
+            <p>AI auto-triages into Low, Medium &amp; High. You confirm or change.</p>
           </div>
           <div className="operator">
             <span className="operator-avatar">OP</span>
             <div className="operator-meta">
               <strong>Support operator</strong>
-              <small>Demo workspace</small>
+              <small>Workspace admin</small>
             </div>
             <button
               aria-label="Sign out"
@@ -408,7 +402,7 @@ function Board() {
           <div className="topbar-breadcrumb">
             <span>Workspace</span>
             <span className="slash">/</span>
-            <strong>Overview</strong>
+            <strong>Priority Triage Board</strong>
           </div>
           <div className="topbar-right">
             <span className="workspace-pill">
@@ -426,14 +420,14 @@ function Board() {
                 Support overview<span>.</span>
               </h1>
               <p className="muted">
-                Monitor incoming requests, review AI triage proposals, and
-                orchestrate Salesforce Case sync.
+                Tickets are automatically triaged into Low, Medium, and High
+                columns. Click any card to confirm or change.
               </p>
             </div>
-            <Link className="button primary" href="/">
+            <Button onClick={() => setAgentOpen(true)}>
               <Plus size={16} />
-              New request
-            </Link>
+              Ask Support Agent
+            </Button>
           </div>
 
           <div className="demo-banner">
@@ -442,8 +436,9 @@ function Board() {
               {config.data?.salesforce_mode === "live"
                 ? "Salesforce live mode selected · only approved snapshots can sync"
                 : "Demo mode: not synced to Salesforce"}
-              {config.data?.analysis_mode === "deterministic_demo" &&
-                " · Deterministic AI demo"}
+              {config.data?.analysis_mode === "deterministic_demo"
+                ? " · Deterministic AI demo"
+                : " · Live AI agent active"}
             </span>
           </div>
 
@@ -467,18 +462,18 @@ function Board() {
                 </span>
               </div>
               <strong>{metrics.data?.review ?? "—"}</strong>
-              <p>Awaiting human decision</p>
+              <p>Awaiting confirmation</p>
             </article>
 
             <article>
               <div className="metric-header">
-                <span>Critical tickets</span>
+                <span>High &amp; Critical</span>
                 <span className="metric-icon metric-danger">
                   <AlertOctagon size={15} />
                 </span>
               </div>
-              <strong>{tickets.isPending ? "—" : criticalCount}</strong>
-              <p>Active high-severity cases</p>
+              <strong>{tickets.isPending ? "—" : highCount}</strong>
+              <p>Urgent agent-triaged cases</p>
             </article>
 
             <article>
@@ -529,26 +524,8 @@ function Board() {
 
           <div className="board-toolbar">
             <div className="board-toolbar-left">
-              <h2>Request board</h2>
+              <h2>Priority triage board</h2>
               <span className="count">{visible.length}</span>
-              <div
-                className="priority-filters"
-                role="group"
-                aria-label="Filter by priority"
-              >
-                {(["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map(
-                  (p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      className={`filter-pill ${priorityFilter === p ? "is-active" : ""}`}
-                      onClick={() => setPriorityFilter(p)}
-                    >
-                      {p === "ALL" ? "All" : p.toLowerCase()}
-                    </button>
-                  ),
-                )}
-              </div>
             </div>
             <div className="search-controls">
               <label className="search">
@@ -557,7 +534,7 @@ function Board() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search requests, priority, team…"
+                  placeholder="Search requests, ref, team…"
                 />
               </label>
               <Button
@@ -571,9 +548,9 @@ function Board() {
           </div>
 
           <p className="board-hint">
-            Drag a handle to move requests. Keyboard: focus a handle, press
-            Space, use arrows, then Space to drop. Card controls also move and
-            reorder.
+            Drag cards between Low, Medium, and High columns to override
+            priority, or click any ticket to confirm or change the AI
+            recommendation.
           </p>
 
           {(error ||
@@ -604,32 +581,31 @@ function Board() {
                 const { source, target } = event.operation;
                 if (!source || !target || !isSortable(source)) return;
                 const ticket = rows.find((t) => t.id === source.id);
-                const columnTarget = columns.find((c) => c.id === target.id);
-                const group = (columnTarget?.id ?? source.group) as Status;
-                const position = columnTarget
-                  ? rows.filter((t) => t.status === group && t.id !== source.id)
-                      .length
-                  : source.index;
+                const columnTarget = priorityColumns.find(
+                  (c) => c.id === target.id,
+                );
+                const targetPriority = (columnTarget?.id ??
+                  source.group) as PriorityColumnId;
                 if (
                   ticket &&
-                  columns.some((c) => c.id === group) &&
-                  (group !== ticket.status ||
-                    source.index !== source.initialIndex)
-                )
-                  void move(ticket, group, position);
+                  priorityColumns.some((c) => c.id === targetPriority) &&
+                  targetPriority !== getEffectiveColumn(ticket)
+                ) {
+                  void changePriority(ticket, targetPriority);
+                }
               }}
             >
-              <div className="kanban">
-                {columns.map((c) => (
+              <div className="kanban kanban-3">
+                {priorityColumns.map((c) => (
                   <Column
                     key={c.id}
                     {...c}
-                    tickets={visible
-                      .filter((t) => t.status === c.id)
-                      .sort((a, b) => a.position - b.position)}
+                    tickets={visible.filter(
+                      (t) => getEffectiveColumn(t) === c.id,
+                    )}
                     open={setSelected}
-                    move={move}
-                    disabled={busy || !!search || priorityFilter !== "ALL"}
+                    changePriority={changePriority}
+                    disabled={busy || !!search}
                     teams={teams.data || []}
                   />
                 ))}
@@ -637,15 +613,9 @@ function Board() {
             </DragDropProvider>
           )}
 
-          {tickets.data && tickets.data.total > rows.length && (
-            <p className="muted">
-              Showing the first {rows.length} of {tickets.data.total} requests.
-              Use the paginated API for larger boards.
-            </p>
-          )}
-
           <div className="board-footer">
-            <ShieldCheck size={14} /> Every AI suggestion requires your review.
+            <ShieldCheck size={14} /> Every AI recommendation can be confirmed or
+            changed by an operator.
             <span>No SLA policy configured</span>
           </div>
         </div>
@@ -655,6 +625,14 @@ function Board() {
         ticketId={selected}
         close={() => setSelected(null)}
         teams={teams.data || []}
+      />
+
+      <SupportAgentPopup
+        open={agentOpen}
+        onOpenChange={setAgentOpen}
+        onSubmitted={() => {
+          void client.invalidateQueries();
+        }}
       />
     </div>
   );

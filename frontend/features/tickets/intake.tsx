@@ -4,7 +4,7 @@ import { ArrowUpRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 
-export function IntakeForm() {
+export function IntakeForm({ onSuccess }: { onSuccess?: (trackingId: string) => void } = {}) {
   const key = useRef<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +23,7 @@ export function IntakeForm() {
         body: JSON.stringify(Object.fromEntries(form)),
       });
       setTracking(result.tracking_id);
+      onSuccess?.(result.tracking_id);
     } catch (error) {
       setError((error as Error).message);
     } finally {
@@ -34,15 +35,15 @@ export function IntakeForm() {
     return (
       <section className="form-panel success" role="status">
         <div className="success-icon-wrap">
-          <CheckCircle2 size={28} />
+          <CheckCircle2 size={26} />
         </div>
         <p className="eyebrow">REQUEST PERSISTED</p>
         <h2>Your request is saved.</h2>
         <p className="muted">Keep your tracking reference for follow-up:</p>
         <strong className="tracking">{tracking}</strong>
         <p className="muted">
-          Our support team will review your request. No automated response has
-          been sent to you yet.
+          CasePilot AI is analyzing your ticket and routing it to the right
+          priority queue for human review.
         </p>
         <Button
           variant="outline"
@@ -101,7 +102,7 @@ export function IntakeForm() {
           required
           minLength={10}
           maxLength={10000}
-          rows={6}
+          rows={4}
           placeholder="Include what you expected, what happened, and any steps you’ve tried."
         />
       </label>
@@ -123,8 +124,7 @@ export function IntakeForm() {
       <p className="muted small form-footnote">
         <ShieldCheck size={13} />
         <span>
-          Your request is saved before AI analysis. Every recommendation is
-          reviewed by a person.
+          Saved before AI triage. Every recommendation is reviewed by a person.
         </span>
       </p>
     </form>
