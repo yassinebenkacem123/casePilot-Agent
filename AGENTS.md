@@ -116,6 +116,7 @@ Submit a customer issue -> show persistent ticket -> run agent -> show priority/
 ## Agent harness and skill-driven execution (mandatory)
 - Read `.agent/README.md`, `.agent/ARCHITECTURE.md`, `.agent/context/CONTEXT_POLICY.md`, and `.agent/context/STATE.md` at project start. Read `.agent/workflows/ENGINEERING_LOOP.md` before implementation.
 - Load **only relevant** `.agent/skills/<skill>/SKILL.md` for each slice; do not dump all skill documents into context. Use progressive disclosure and verify actual code over stale summaries.
+- **UI & Brand Identity:** Whenever creating or modifying UI components, pages, or styles, load `.agents/skills/casepilot-design-system/SKILL.md` (in addition to `ui-design` where relevant) and adhere strictly to the centralized dark-first tokens, typography, logo usage, and AI-vs-human visual rules.
 - Execute the closed loop **Inspect → Plan → Implement → Verify → Critique → Record → Next**. Write tests and report precise commands/outcomes; retry a repeated failure at most twice without changing diagnosis.
 - Treat `.agent/harness/HARNESS.md` as the executable-quality contract: fixtures, validation, idempotency, adversarial inputs, traces, least-privilege tools and explicit gates.
 - On each milestone, refresh `.agent/context/STATE.md` with true implementation state, changed paths, tests run/results, blockers and next action. No fabricated test or integration successes.

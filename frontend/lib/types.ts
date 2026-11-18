@@ -4,6 +4,12 @@ export const columns = [
   { id: "IN_PROGRESS", label: "En cours" },
   { id: "RESOLVED", label: "Résolu" },
 ] as const;
+export const priorityColumns = [
+  { id: "LOW", label: "Low" },
+  { id: "MEDIUM", label: "Medium" },
+  { id: "HIGH", label: "High" },
+] as const;
+export type PriorityColumnId = (typeof priorityColumns)[number]["id"];
 export type Status = (typeof columns)[number]["id"];
 export type Priority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 export type Team = { id: string; name: string };
@@ -40,6 +46,7 @@ export type Ticket = {
   subject: string;
   status: Status;
   priority: Priority;
+  proposed_priority?: Priority | null;
   priority_rank: number;
   position: number;
   intent: string | null;

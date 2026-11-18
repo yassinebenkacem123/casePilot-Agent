@@ -75,10 +75,28 @@ def tickets(
     if status:
         query = query.where(Ticket.status == status)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(
-        query.order_by(Ticket.status, Ticket.position, Ticket.id).offset(offset).limit(limit)
+    rows = list(
+        db.scalars(
+            query.order_by(Ticket.status, Ticket.position, Ticket.id).offset(offset).limit(limit)
+        )
     )
-    return {"items": [TicketSummary.model_validate(t).model_dump() for t in items], "total": total}
+    pending_proposals = {
+        p.ticket_id: p.proposed_priority
+        for p in db.scalars(
+            select(TicketProposal).where(
+                TicketProposal.ticket_id.in_([t.id for t in rows]),
+                TicketProposal.state == "PENDING",
+            )
+        )
+    } if rows else {}
+    return {
+        "items": [
+            TicketSummary.model_validate(t).model_dump()
+            | {"proposed_priority": pending_proposals.get(t.id)}
+            for t in rows
+        ],
+        "total": total,
+    }
 
 
 def detail(db, ticket):
