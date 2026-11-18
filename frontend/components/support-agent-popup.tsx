@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { MessageSquarePlus, Sparkles, X } from "lucide-react";
+import { MessageSquarePlus, X } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { IntakeForm } from "@/features/tickets/intake";
 
@@ -29,10 +29,6 @@ export function SupportAgentPopup({
           <header className="agent-popup-header">
             <div className="agent-popup-title">
               <BrandLogo variant="light-surface" size="sm" />
-              <span className="agent-popup-badge">
-                <Sparkles size={11} />
-                Live Triage Agent
-              </span>
             </div>
             <button
               type="button"
@@ -62,4 +58,3 @@ export function SupportAgentPopup({
     </div>
   );
 }
-

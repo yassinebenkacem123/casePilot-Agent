@@ -73,6 +73,8 @@ export function TicketDrawer({
   }
 
   const proposal = t?.proposals.find((p) => p.state === "PENDING");
+  const effectivePriority = proposal?.proposed_priority ?? t?.priority;
+  const effectiveTeamId = proposal?.proposed_team_id ?? t?.team_id ?? "";
   const hasSources = Boolean(t?.drafts.some((d) => d.sources.length > 0));
 
   return (
@@ -142,7 +144,7 @@ export function TicketDrawer({
                     key={p}
                     type="button"
                     disabled={busy}
-                    className={`quick-priority-btn ${t.priority === p ? "is-selected" : ""}`}
+                    className={`quick-priority-btn ${effectivePriority === p ? "is-selected" : ""}`}
                     onClick={() =>
                       action(`tickets/${t.id}`, { priority: p }, "PATCH")
                     }
@@ -249,7 +251,7 @@ export function TicketDrawer({
                   Priority
                   <select
                     aria-label="Priority"
-                    value={t.priority}
+                    value={effectivePriority}
                     disabled={busy}
                     onChange={(e) =>
                       action(
@@ -268,7 +270,7 @@ export function TicketDrawer({
                   Assigned team
                   <select
                     aria-label="Assigned team"
-                    value={t.team_id || ""}
+                    value={effectiveTeamId}
                     disabled={busy}
                     onChange={(e) =>
                       action(

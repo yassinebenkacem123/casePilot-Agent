@@ -17,9 +17,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CasePilot AI · Intelligent Support Orchestration",
+  title: "CasePilot AI · Customer Support. Reimagined with AI.",
   description:
-    "AI-powered customer support orchestration with human-in-the-loop review and Salesforce Service Cloud sync.",
+    "Transform customer requests into intelligent workflows with LangGraph, RAG, human-in-the-loop approvals, and Salesforce Service Cloud sync.",
 };
 
 export default function RootLayout({

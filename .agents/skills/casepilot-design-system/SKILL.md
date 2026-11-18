@@ -1,125 +1,77 @@
 ---
 name: casepilot-design-system
-description: CasePilot AI brand identity, dark-first design tokens, typography, layout, Kanban, and AI agent UI patterns. Load whenever creating or modifying UI components.
+description: CasePilot AI brand identity, dark-first design tokens, enlarged logo rules, Figma-based layout composition, Kanban, and AI agent UI patterns. Load whenever creating or modifying UI components.
 ---
 
 # CasePilot AI — Design System & UI Guidelines
 
-## 1. Brand Identity & Personality
+## 1. Brand Identity & Visual Direction
 
 **Brand name:** CasePilot AI
-**Positioning:** Intelligent customer support orchestration platform — Linear-level precision, modern AI platform aesthetics, and enterprise Salesforce workflows.
-
-**Personality:**
-- **Premium & modern:** High-contrast dark surfaces, crisp 1px borders, disciplined spacing.
-- **Intelligent & trustworthy:** Transparent AI reasoning, explicit confidence and provenance, never opaque or gimmicky.
-- **Human-centered AI:** AI proposes; humans approve. Proposed actions are visually distinct from approved/executed actions.
-- **Enterprise-ready:** Accessible, keyboard-navigable, responsive across desktop, tablet, and mobile.
+**Positioning:** Intelligent customer support orchestration platform powered by LangGraph, RAG, human-in-the-loop governance, and Salesforce Service Cloud.
+**Visual Direction:** *A premium creative agency layout (`FasterUI` Figma reference `#1:3`) transformed into an enterprise-grade dark-first AI SaaS experience.*
 
 ---
 
 ## 2. Color Tokens & Usage Rules
 
-CasePilot AI uses a **light-first** visual identity (`#FFFFFF` + `#FF3419` brand orange-red). All colors are centralized as CSS custom properties in `frontend/app/globals.css` — never hardcode hex values in components.
+CasePilot AI uses a **light-first** visual identity (`#F5F8FF` / `#FFFFFF` + `#FF3419` sampled brand orange-red). All tokens are centralized in `frontend/app/globals.css`.
 
 | Semantic Token | CSS Variable | Value | Usage |
 |---|---|---|---|
-| Main background | `--background` | `#FFFFFF` | Landing canvas, cards, inputs |
-| Secondary background | `--bg-secondary` | `#F8F9FB` | Workspace backdrop, hero surface, subtle regions |
-| Card background | `--card` | `#FFFFFF` | Metric cards, ticket cards, form panels |
-| Elevated surface | `--elevated` | `#F1F3F6` | Kanban column wells, hover states |
+| Main background | `--background` | `#F5F8FF` | App canvas, page backdrop |
+| Secondary background | `--bg-secondary` | `#EEF2FB` | Kanban column wells, recessed surfaces |
+| Card background | `--card` | `#FFFFFF` | Bento cards, metric cards, ticket cards, drawers |
+| Elevated surface | `--elevated` | `#F3F5FA` | Secondary buttons, icon wells, badges, hover states |
 | Primary text | `--foreground` | `#151414` | Headings, primary labels, ticket titles |
-| Secondary text | `--muted-foreground` | `#52525B` | Metadata, descriptions, timestamps, hints |
-| Primary accent | `--primary` | `#FF3419` | Sampled from official logo AI badge; primary CTAs, active nav, floating agent FAB, key AI indicators |
+| Secondary text | `--muted-foreground` | `#5C5B70` | Descriptions, metadata, timestamps |
+| Primary accent | `--primary` | `#FF3419` | Sampled from official logo AI badge; primary CTAs, active nav, floating agent FAB, AI indicators |
 | Accent hover | `--primary-hover` | `#E52B1A` | Hover/active state for primary buttons |
-| Subtle border | `--border` | `#E4E4E7` | 1px hairlines, dividers, card/input outlines |
+| Subtle border | `--border` | `#DFE4F2` | 1px hairlines, card/input outlines |
 | Success | `--success` | `#16A34A` | Approved states, low priority, live sync |
 | Warning | `--warning` | `#D97706` | Medium priority, demo mode notices |
 | Danger | `--danger` | `#DC2626` | Errors, critical severity, destructive actions |
 
 **Strict Usage Rules:**
-- Black (`#000000`) and dark charcoal (`#0D0D0F`, `#151518`) dominate ≥ 85% of the viewport.
-- Reserve `#FF3419` for primary CTAs, active navigation indicators, focused/selected states, and meaningful AI highlights.
-- **Never** use generic blue/purple AI gradients or neon glow effects.
-- **Never** use large orange background fills for cards or panels.
+- Black (`#000000`) and dark charcoal (`#0D0D0F`, `#151518`) dominate the interface.
+- **Never** use generic blue/purple AI gradients (`#4E47FF` / `#5B54FF` from the source Figma template are always replaced with `#FF3419` or dark surfaces).
 
 ---
 
-## 3. Typography
+## 3. Enlarged Logo Sizing & Usage
 
-- **Headings (`h1`–`h3`, display metrics):** `Sora` (`--font-sora`), tight tracking (`-0.025em` to `-0.04em`), weights `600`–`700`.
-- **Body & UI:** `Inter` (`--font-inter`), `14px` base, `1.5`–`1.65` line height, weights `400`–`600`.
-- **Monospace (ticket refs, tracking IDs, run IDs):** `JetBrains Mono` / `ui-monospace`.
-
-Avoid decorative weights above `700` or ultra-light weights below `400`.
-
----
-
-## 4. Logo Usage Guidelines
-
-Use the original logo PNGs as the single source of truth. **Never** recreate, stretch, skew, recolor, or replace them with SVG approximations or AI-generated variants.
-
-- **Light surfaces (default):** `/assets/casepilot-logo-light.png` (`#151414` wordmark + `#FF3419` AI badge).
-- **Dark surfaces:** `/assets/casepilot-logo-dark.png` (white wordmark + `#FF3419` AI badge, transparent background).
-- Always render via the reusable `<BrandLogo />` component with `object-contain` and explicit aspect-preserving dimensions. Maintain clear space around the mark.
+The source logo PNGs (`2700x1500`) have native vertical transparent whitespace (`Content bbox: 2672x702`).
+- **Always** render via `<BrandLogo variant="dark-surface" size="header" | "md" | "sm" />` (`frontend/components/brand-logo.tsx`).
+- **Desktop Header Target:** `220px–255px` wide (`w-[180px] sm:w-[230px] lg:w-[255px]`), using `.brand-logo-img` (`margin-top: -15%; margin-bottom: -18%`) to trim only transparent vertical whitespace without clipping, stretching, or recoloring the mark or AI badge.
+- **Dark surfaces (default):** `/assets/casepilot-logo-dark.png` (white wordmark + `#FF3419` AI badge).
+- **Light surfaces:** `/assets/casepilot-logo-light.png` (`#151414` wordmark + `#FF3419` AI badge).
 
 ---
 
-## 5. Layout & Spacing Principles
+## 4. Typography
 
-- **App Shell:** Fixed/collapsible left sidebar (`240px` desktop, compact top bar on mobile `<= 768px`) + sticky translucent top bar (`64px`, `backdrop-filter: blur(12px)`) + spacious main content area (`max-width: 1600px`).
-- **Grid & Rhythm:** 4px/8px spacing scale (`gap: 16px`–`24px` for grids, `16px`–`24px` internal card padding).
-- **Responsive Breakpoints:**
-  - Desktop (`>= 1200px`): 4-column metric grid, 4-column Kanban board, full sidebar.
-  - Tablet (`768px`–`1199px`): 2-column metric grid, horizontal-scroll Kanban columns, compact sidebar.
-  - Mobile (`<= 767px`): Stacked intake, collapsible/compact nav, 2-column or 1-column metrics, horizontal-scroll or stacked Kanban.
+- **Headings (`h1`–`h3`, metrics, FAQ triggers):** `Sora` (`--font-sora`), weights `600`–`700`, tight tracking (`-0.03em` to `-0.035em`).
+- **Body & UI:** `Inter` (`--font-inter`), `14px` base, `1.5`–`1.65` line height.
+- **Monospace:** `ui-monospace` for ticket references (`CP-XXXX`), tracking IDs, and run IDs.
 
 ---
 
-## 6. Component Design Patterns
+## 5. Figma-Based Landing Page Structure (`features/tickets/landing.tsx`)
 
-- **Cards:** `--card` (`#151518`) background, `1px solid var(--border)` (`#2A2A2E`), `10px`–`12px` radius, restrained border-brightening on hover (`#3A3A40`).
-- **Primary Buttons:** `--primary` (`#FF3419`) background, `#FFFFFF` text, `--primary-hover` (`#E52B1A`) on hover, subtle `scale(0.98)` press feedback.
-- **Secondary / Outline Buttons:** `--elevated` (`#1F1F23`) or transparent background, `1px solid var(--border)`, `--foreground` text.
-- **Inputs & Selects:** `--bg-secondary` (`#0D0D0F`) background, `1px solid var(--border)`, `--foreground` text, `#FF3419` focus ring (`2px` offset).
-
----
-
-## 7. Kanban-Specific Design Rules
-
-- **Priority vs. Status Separation:** Priority (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`) is severity; Status (`REVIEW`, `TODO`, `IN_PROGRESS`, `RESOLVED`) is workflow column. Never conflate them.
-- **Columns:** Subtle column header with status dot, count pill, and `--bg-secondary` container.
-- **Ticket Cards:** Display `public_ref`, drag handle, clickable subject title, customer name, priority badge (semantic color), intent tag, assigned team, AI confidence, approval state badge (`PENDING` vs `APPROVED`), and accessible keyboard/select move controls.
-- **Drag & Drop:** Preserve `@dnd-kit/react` `useSortable` / `useDroppable` contracts, clear `.dragging` visual feedback (elevated border + subtle accent ring), and keyboard move controls.
+Follows the `Faster Template` (`node-id=1:3`) composition converted to dark-first CasePilot AI:
+1. **Top Navigation:** Enlarged left `<BrandLogo size="header" />`, centered glassmorphic pill container (`border-radius: 20px`) with `Platform`, `Features`, `How It Works`, `AI Capabilities`, `Dashboard`, `Contact`, and right `Sign In` + `Get Started` CTA.
+2. **Hero:** Centered display headline (*"Customer Support. Reimagined with AI."*), subtitle, `Explore Platform` + `View Dashboard` CTAs, backed by local `/assets/figma/hero-mesh.svg`.
+3. **Asymmetric 4-Column Bento Grid ("What CasePilot Does"):** 3 top cards + 1 tall vertical span-2 card on the right (with live mini `Low / Medium / High` Kanban preview) + 1 wide span-2 card on the bottom-left (with `#FF3419` RAG grounding callout) + 1 standard card.
+4. **Orchestration in Action (3-Card Showcase + Trust Pill):** Product previews + centered rounded trust badge.
+5. **Split Capabilities Section:** Left CTA card + right 2-column checklist card with bottom stat bar.
+6. **FAQ Accordion:** 2-column split with interactive accordion items.
+7. **Submit a Support Request:** Centered `<IntakeForm />` + floating bottom-right `<SupportAgentPopup />`.
+8. **Rounded Footer Card:** `32px` radius card with `/assets/figma/footer-wave.svg`, `<BrandLogo />`, and navigation links.
 
 ---
 
-## 8. AI Agent UI Patterns
+## 6. Operational Dashboard, Kanban & Human Review
 
-- **Visual States:** Explicitly surface agent lifecycle states with restrained icons and concise labels:
-  - `PENDING_ANALYSIS`: AI analyzing request (subtle pulse indicator, never blocking).
-  - `COMPLETED` + `PENDING` proposal: Intent detected, Priority suggested, Team recommended, Knowledge retrieved — **Awaiting human approval**.
-  - `APPROVED`: Human-approved decision (green/verified indicator).
-  - `FAILED`: Agent error (semantic danger alert with retry option).
-- **AI vs. Human Authority:**
-  - AI recommendations live in a clearly labeled **AI Proposal** container with `#FF3419` accent tag, confidence percentage, and rationale.
-  - Human overrides and locked fields (`human_locked_fields`) display explicit lock badges.
-  - **Never** present a proposed action or draft reply as sent or synced.
-
----
-
-## 9. Motion, Accessibility & Quality Checklist
-
-- **Motion:** Smooth `150ms`–`220ms` cubic-bezier transitions for drawers, modals, card hover, and button press. Wrap animations with `@media (prefers-reduced-motion: reduce)` fallbacks.
-- **Accessibility:**
-  - WCAG AA contrast on all dark surfaces (`#F5F5F7` on `#151518` > 13:1; `#A1A1AA` on `#151518` > 6:1).
-  - Visible `:focus-visible` outlines (`#FF3419`).
-  - Semantic landmarks (`<main>`, `<aside>`, `<header>`, `<section aria-label>`), `role="alert"`, `role="status"`, and keyboard-accessible DnD controls.
-
-**Pre-merge Checklist:**
-- [ ] Zero hardcoded off-brand colors (`#5359d9`, light-mode `#fff` surfaces) remaining.
-- [ ] Official `<BrandLogo />` rendered cleanly without distortion.
-- [ ] `Sora` and `Inter` loaded and applied.
-- [ ] AI proposals clearly separated from human-approved actions.
-- [ ] `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build` pass.
-
+- **Priority Kanban (`Low` / `Medium` / `High`):** Agent-triaged tickets (`proposed_priority ?? priority`) automatically populate `Low`, `Medium`, and `High` columns (`CRITICAL` grouped in `High` with a `critical` badge).
+- **Confirm or Change Drawer:** Clicking any card opens `TicketDrawer` with a prominent **Confirm or Change** bar (`Confirm recommendation` or quick-select `low` / `medium` / `high` / `critical`), field locks, RAG sources, Salesforce sync, and audit timeline.
+- **Pop-up Support Agent:** Floating bottom-right `<SupportAgentPopup />` allows submitting requests directly from `/board` without leaving the workspace.

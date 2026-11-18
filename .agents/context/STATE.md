@@ -1,7 +1,7 @@
 # Working state (agent-maintained)
 
-## Current milestone — 2026-11-17
-Intake/persistence/Kanban implemented. CasePilot AI dark-first brand identity, design skill (`casepilot-design-system`), typography (`Sora` + `Inter`), official logo assets, and UI/UX refinement implemented across intake, login, dashboard, Kanban board, and ticket review drawer.
+## Current milestone — 2026-11-18
+Figma-based UI refactoring (`y9NZgZRxf5c7ily2D00zNc`, `node-id=1:3`) completed in the dark-first CasePilot AI identity (`#000000`, `#0D0D0F`, `#151518`, `#1F1F23`, `#F5F5F7`, `#A1A1AA`, `#FF3419` sampled logo orange, `#2A2A2E` borders) with enlarged `220–255px` header logo, local Figma SVG assets (`hero-mesh.svg`, `footer-wave.svg`), agent-triaged `Low` / `Medium` / `High` Kanban board, Confirm/Change drawer, and bottom-right `<SupportAgentPopup />`.
 
 ## Completed
 - `backend/`: FastAPI/SQLAlchemy entities, Alembic schema, protected tickets/details/edits/moves/metrics; idempotent intake and durable analysis jobs.
