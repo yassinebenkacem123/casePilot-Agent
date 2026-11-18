@@ -162,9 +162,7 @@ function Card({
           aria-label={`Move ${ticket.public_ref}`}
           value={columnId}
           disabled={disabled}
-          onChange={(e) =>
-            changePriority(ticket, e.target.value as Priority)
-          }
+          onChange={(e) => changePriority(ticket, e.target.value as Priority)}
         >
           {priorityColumns.map((c) => (
             <option key={c.id} value={c.id}>
@@ -172,11 +170,7 @@ function Card({
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          className="card-review-btn"
-          onClick={open}
-        >
+        <button type="button" className="card-review-btn" onClick={open}>
           Confirm / Change
         </button>
       </div>
@@ -311,9 +305,7 @@ function Board() {
       "tickets",
     ]);
     const optimistic = rows.map((t) =>
-      t.id === ticket.id
-        ? { ...t, priority, proposed_priority: null }
-        : t,
+      t.id === ticket.id ? { ...t, priority, proposed_priority: null } : t,
     );
     client.setQueryData(["tickets"], { ...previous, items: optimistic });
     try {
@@ -375,7 +367,10 @@ function Board() {
           <div className="human-note">
             <ShieldCheck size={18} />
             <strong>Human at the helm</strong>
-            <p>AI auto-triages into Low, Medium &amp; High. You confirm or change.</p>
+            <p>
+              AI auto-triages into Low, Medium &amp; High. You confirm or
+              change.
+            </p>
           </div>
           <div className="operator">
             <span className="operator-avatar">OP</span>
@@ -435,7 +430,9 @@ function Board() {
             <span>
               {config.data?.salesforce_mode === "live"
                 ? "Salesforce live mode selected · only approved snapshots can sync"
-                : "Demo mode: not synced to Salesforce"}
+                : config.data?.salesforce_mode === "demo"
+                  ? "Demo mode: not synced to Salesforce"
+                  : "Standalone mode · tickets saved locally"}
               {config.data?.analysis_mode === "deterministic_demo"
                 ? " · Deterministic AI demo"
                 : " · Live AI agent active"}
@@ -614,8 +611,8 @@ function Board() {
           )}
 
           <div className="board-footer">
-            <ShieldCheck size={14} /> Every AI recommendation can be confirmed or
-            changed by an operator.
+            <ShieldCheck size={14} /> Every AI recommendation can be confirmed
+            or changed by an operator.
             <span>No SLA policy configured</span>
           </div>
         </div>
@@ -625,6 +622,10 @@ function Board() {
         ticketId={selected}
         close={() => setSelected(null)}
         teams={teams.data || []}
+        salesforceEnabled={
+          config.data?.salesforce_mode === "live" ||
+          config.data?.salesforce_mode === "demo"
+        }
       />
 
       <SupportAgentPopup

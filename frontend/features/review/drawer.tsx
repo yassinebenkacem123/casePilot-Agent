@@ -30,10 +30,12 @@ export function TicketDrawer({
   ticketId,
   close,
   teams,
+  salesforceEnabled = false,
 }: {
   ticketId: string | null;
   close: () => void;
   teams: Team[];
+  salesforceEnabled?: boolean;
 }) {
   const client = useQueryClient();
   const [error, setError] = useState("");
@@ -90,7 +92,9 @@ export function TicketDrawer({
           {t && (
             <div className="drawer-badges">
               <span className="ticket-ref">{t.public_ref}</span>
-              <PriorityBadge priority={proposal?.proposed_priority ?? t.priority} />
+              <PriorityBadge
+                priority={proposal?.proposed_priority ?? t.priority}
+              />
               <AnalysisBadge state={t.analysis_state} />
               <ApprovalBadge state={t.approval_state} />
             </div>
@@ -136,7 +140,11 @@ export function TicketDrawer({
                   </Button>
                 )}
               </div>
-              <div className="quick-priority-row" role="group" aria-label="Change priority">
+              <div
+                className="quick-priority-row"
+                role="group"
+                aria-label="Change priority"
+              >
                 {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((p) => (
                   <button
                     key={p}
@@ -165,7 +173,8 @@ export function TicketDrawer({
             <section>
               <div className="section-heading">
                 <h3>
-                  <Sparkles size={15} className="accent-icon" /> AI recommendation
+                  <Sparkles size={15} className="accent-icon" /> AI
+                  recommendation
                 </h3>
                 <Button
                   variant="outline"
@@ -369,31 +378,33 @@ export function TicketDrawer({
               </p>
             </section>
 
-            <section>
-              <div className="section-heading">
-                <h3>
-                  <CloudUpload size={15} /> Salesforce
-                </h3>
-                <span className="badge">{t.sync_status}</span>
-              </div>
-              {t.salesforce_case_id && (
-                <p className="small muted">Case ID: {t.salesforce_case_id}</p>
-              )}
-              <Button
-                disabled={busy}
-                variant="outline"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Approve this exact ticket version for Salesforce sync? In demo mode no Salesforce data is written.",
+            {salesforceEnabled && (
+              <section>
+                <div className="section-heading">
+                  <h3>
+                    <CloudUpload size={15} /> Salesforce
+                  </h3>
+                  <span className="badge">{t.sync_status}</span>
+                </div>
+                {t.salesforce_case_id && (
+                  <p className="small muted">Case ID: {t.salesforce_case_id}</p>
+                )}
+                <Button
+                  disabled={busy}
+                  variant="outline"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Approve this exact ticket version for Salesforce sync? In demo mode no Salesforce data is written.",
+                      )
                     )
-                  )
-                    void action(`tickets/${t.id}/salesforce-sync`);
-                }}
-              >
-                Approve this version &amp; request sync
-              </Button>
-            </section>
+                      void action(`tickets/${t.id}/salesforce-sync`);
+                  }}
+                >
+                  Approve this version &amp; request sync
+                </Button>
+              </section>
+            )}
 
             <section>
               <h3>Audit timeline</h3>
